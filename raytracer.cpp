@@ -201,26 +201,19 @@ float RDM_Smith(float LdotH, float LdotN, float VdotH, float VdotN, float alpha)
 // VdotN : View . Norm
 color3 RDM_bsdf_s(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN, Material *m) {
 
-  //RDM_Beckmann(float NdotH, float alpha)
-  //RDM_Fresnel(float LdotH, float extIOR, float intIOR)
-  //RDM_Smith(float LdotH, float LdotN, float VdotH, float VdotN, float alpha)
-
   float D, F, G;
   D = RDM_Beckmann(NdotH, m->roughness);
-  F = RDM_Fresnel(LdotH, m->IOR, 1);
+  F = RDM_Fresnel(LdotH, 1, m->IOR);
   G = RDM_Smith(LdotH, LdotN, VdotH, VdotN, m->roughness);
 
   return m->specularColor * ( (D*F*G) / (4.f * LdotN * VdotN) ) ;
-
-  //!\todo specular term of the bsdf, using D = RDB_Beckmann, F = RDM_Fresnel, G = RDM_Smith
-
   
 }
+
+
 // diffuse term of the cook torrance bsdf
 color3 RDM_bsdf_d(Material *m) {
   return m->diffuseColor / (float)M_PI;
-
-  //!\todo compute diffuse component of the bsdf
 
 }
 
@@ -234,8 +227,6 @@ color3 RDM_bsdf_d(Material *m) {
 color3 RDM_bsdf(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN, Material *m) {
 
   return RDM_bsdf_s(LdotH, NdotH, VdotH, LdotN, VdotN, m) + RDM_bsdf_d(m);
-
-  //! \todo compute bsdf diffuse and specular term
 }
 
 
@@ -293,25 +284,23 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
       }
     }
 
-    ret = color_d;
+    //ret = color_d;
 
-    // Ray rayReflect;
-    // vec3 dirRayRelect = reflect(, normalize(intersection.normal));
+    if(ray->depth < 10){
+      Ray rayReflect;
+      vec3 dirRayRelect = reflect(ray->dir, normalize(intersection.normal));
 
-    // rayInit(&rayReflect, intersection.position, dirRayRelect);
-    // rayReflect.depth = 0;
+      rayInit(&rayReflect, (intersection.position + dirRayRelect * acne_eps), dirRayRelect);
 
-    // if(rayReflect.depth < 10){
-    //   color_r = trace_ray(scene, &rayReflect, tree);
-    //   rayReflect.depth++;
-    // }
+      rayReflect.depth = ray->depth+1;
+  
+      color_r = trace_ray(scene, &rayReflect, tree);
 
-    // ret = color_d + color_r;
+      ret = color_d + RDM_Fresnel(dot(rayReflect.dir, intersection.normal), 1, intersection.mat->IOR) * intersection.mat->specularColor * color_r; 
+    }else{
+      ret = color_d;
+    }
 
-    // if(rayonReflechi.depth < 10){
-    //   ret += trace_ray(scene, &rayonReflechi, tree);
-    //   rayonReflechi.depth++;
-    // }
 
   }else{
     ret = scene->skyColor;
