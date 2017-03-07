@@ -271,6 +271,7 @@ Scene* initScene3(){
     return scene;
 }
 
+
 int main(int argc, char *argv[]) {
     printf("Welcom to the L3 IGTAI RayTracer project\n");
 

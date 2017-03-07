@@ -10,6 +10,7 @@
 
 /// acne_eps is a small constant used to prevent acne when computing intersection
 //  or boucing (add this amount to the position before casting a new ray !
+
 const float acne_eps = 1e-4;
 
 bool intersectPlane(Ray *ray, Intersection *intersection, Object *plane) {
@@ -253,8 +254,8 @@ color3 shade(vec3 n, vec3 v, vec3 l, color3 lc, Material *mat ){
   if(dot(l,n) < 0){
     return color3(0, 0, 0);
   }else{
-    return lc * RDM_bsdf(LdotH, NdotH, VdotH, LdotN, VdotN, mat) * LdotN;
-    //return ((mat->diffuseColor / (float)M_PI) * dot(l,n) * lc);
+    //return lc * RDM_bsdf(LdotH, NdotH, VdotH, LdotN, VdotN, mat) * LdotN;
+    return ((mat->diffuseColor / (float)M_PI) * dot(l,n) * lc); //pour la v2
   }
   	    
 }
@@ -288,8 +289,9 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
 
     if(ray->depth < 10){
       Ray rayReflect;
-      vec3 dirRayRelect = reflect(ray->dir, normalize(intersection.normal));
-
+      vec3 dirRayRelect = reflect(ray->dir, intersection.normal);
+      dirRayRelect = normalize(dirRayRelect);
+      
       rayInit(&rayReflect, (intersection.position + dirRayRelect * acne_eps), dirRayRelect);
 
       rayReflect.depth = ray->depth+1;
@@ -301,6 +303,7 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
       ret = color_d;
     }
 
+      // ret = 0.5f * intersection.normal + 0.5f;  //Pour la v1
 
   }else{
     ret = scene->skyColor;
